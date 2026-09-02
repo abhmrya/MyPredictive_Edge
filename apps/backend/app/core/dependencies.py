@@ -26,4 +26,6 @@ async def get_current_user(
     return {
         "user_id": str(response.user.id),
         "email": response.user.email,
+        "role": response.user.role,
+        "name_": "Abhay Maurya",  # Placeholder for name, replace with actual user data if available
     }
