@@ -294,6 +294,7 @@ async def supabase_check():
         "client_initialized": AsyncSupabase.client is not None,
     }
 
+#  ***********   testing **********
 
 # @app.get("/test-error")
 # async def test_error():
@@ -304,3 +305,16 @@ async def supabase_check():
 # async def test_500():
 #     result = 10 / 0
 #     return {"result": result}
+
+
+from fastapi import Depends
+from app.core.dependencies import get_current_user
+
+@app.get("/api/test-auth")
+async def test_auth(
+    current_user: dict = Depends(get_current_user),
+):
+    return {
+        "message": "Authentication successful",
+        "user": current_user,
+    }
