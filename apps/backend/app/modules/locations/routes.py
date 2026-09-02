@@ -1,4 +1,4 @@
-from fastapi import APIRouter
+from fastapi import APIRouter, Request
 from uuid import UUID
 from app.modules.locations.schemas import (
     LocationCreate,
@@ -12,6 +12,8 @@ from app.modules.locations.services import (
     update_location,
     delete_location
 )
+
+from app.core.limiter import limiter
 
 router = APIRouter(
     prefix="/api/locations",
@@ -30,7 +32,8 @@ async def create_location_route(location: LocationCreate):
 
 
 @router.get("/", response_model=list[LocationResponse])
-async def get_locations_route():
+@limiter.limit("4/minute")  # Limit to 10 requests per minute
+async def get_locations_route(request: Request):
     return await get_locations()
 
 

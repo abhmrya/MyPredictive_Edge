@@ -4,9 +4,11 @@ from uuid import uuid4
 
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, JSONResponse
 
+from app.core.exceptions import AppError
 from app.core.config import settings
+
 from app.services.supabase_client import AsyncSupabase
 
 from app.utils.logger import log_event
@@ -17,6 +19,14 @@ from app.utils.log_context import (
 
 from app.modules.health.routes import router as health_router
 from app.modules.locations.routes import router as locations_router
+
+from app.core.exceptions import NotFoundError
+from fastapi.exceptions import RequestValidationError
+
+from slowapi.errors import RateLimitExceeded
+from slowapi import _rate_limit_exceeded_handler
+
+from app.core.limiter import limiter
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -39,6 +49,85 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+app.state.limiter = limiter
+
+app.add_exception_handler(
+    RateLimitExceeded,
+    _rate_limit_exceeded_handler,
+)
+
+
+@app.exception_handler(AppError)
+async def app_error_handler(request: Request, exc: AppError):
+    log_event(
+        "ERROR",
+        "Application error: %s",
+        exc.message,
+        event_name="app_error",
+        status_code=exc.status_code,
+    )
+
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={
+            "status": "error",
+            "message": exc.message,
+        },
+    )
+
+
+@app.exception_handler(RequestValidationError)
+async def validation_error_handler(
+    request: Request,
+    exc: RequestValidationError,
+):
+    errors = []
+
+    for error in exc.errors():
+        location = error.get("loc", [])
+
+        field = location[-1] if location else "input"
+
+        errors.append(
+            {
+                "field": str(field),
+                "message": error.get(
+                    "msg",
+                    "Invalid value",
+                ),
+            }
+        )
+
+    return JSONResponse(
+        status_code=422,
+        content={
+            "status": "error",
+            "message": "Validation failed",
+            "errors": errors,
+        },
+    )
+
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(
+    request: Request,
+    exc: Exception,
+):
+    log_event(
+        "ERROR",
+        "Unhandled server error",
+        event_name="unhandled_exception",
+        status_code=500,
+        exc_info=True,
+    )
+
+    return JSONResponse(
+        status_code=500,
+        content={
+            "status": "error",
+            "message": "Internal Server Error",
+        },
+    )
 
 # ==========================================
 # Security Headers Middleware
@@ -204,3 +293,14 @@ async def supabase_check():
         "supabase_url": settings.supabase_url,
         "client_initialized": AsyncSupabase.client is not None,
     }
+
+
+# @app.get("/test-error")
+# async def test_error():
+#     raise NotFoundError("This is a test error")
+
+
+# @app.get("/test-500")
+# async def test_500():
+#     result = 10 / 0
+#     return {"result": result}
