@@ -44,6 +44,6 @@ async def update_location_route(location_id: UUID, location: LocationUpdate):
     return await update_location(location_id, location)
 
 
-@router.delete("/{location_id}",)
+@router.delete("/{location_id}", response_model=LocationResponse)
 async def delete_location_route(location_id: UUID):
     return await delete_location(location_id)
