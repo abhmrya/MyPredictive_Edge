@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Integer, Numeric, String
+from sqlalchemy import DateTime, Integer, Numeric, String, text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -14,32 +14,52 @@ class Location(Base):
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,
-        default=uuid.uuid4,
+        server_default=text("gen_random_uuid()"),
     )
 
     name: Mapped[str] = mapped_column(
-        String,
+        String(255),
         nullable=False,
     )
 
-    type: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
+    type: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
     )
 
-    city: Mapped[str] = mapped_column(
-        String,
-        nullable=False,
+    address: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True,
     )
 
-    lat: Mapped[float] = mapped_column(
+    city: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    state: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    country: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True,
+    )
+
+    zip_code: Mapped[str | None] = mapped_column(
+        String(20),
+        nullable=True,
+    )
+
+    lat: Mapped[float | None] = mapped_column(
         Numeric(9, 6),
-        nullable=False,
+        nullable=True,
     )
 
-    lng: Mapped[float] = mapped_column(
+    lng: Mapped[float | None] = mapped_column(
         Numeric(9, 6),
-        nullable=False,
+        nullable=True,
     )
 
     capacity: Mapped[int] = mapped_column(
@@ -50,11 +70,11 @@ class Location(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.utcnow,
+        server_default=text("now()"),
     )
 
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,
-        default=datetime.utcnow,
+        server_default=text("now()"),
     )

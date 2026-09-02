@@ -7,7 +7,7 @@ from app.core.config import settings
 from app.database.core import Base
 
 # Import all models so SQLAlchemy knows about them.
-# Add new model imports here as the project grows.
+from app.modules.locations.models import Location
 
 
 config = context.config
@@ -36,6 +36,7 @@ def run_migrations_offline() -> None:
         literal_binds=True,
         dialect_opts={"paramstyle": "named"},
         compare_type=True,
+        compare_server_default=True,
     )
 
     with context.begin_transaction():
