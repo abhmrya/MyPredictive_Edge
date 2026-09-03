@@ -12,6 +12,10 @@ from app.modules.organizations.models import (
     Organization,
     OrganizationMember,
 )
+from app.modules.rbac.models import (
+    OrganizationRole,
+    OrganizationRolePermission,
+)
 
 config = context.config
 
