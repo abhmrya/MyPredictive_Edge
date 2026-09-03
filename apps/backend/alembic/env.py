@@ -8,7 +8,10 @@ from app.database.core import Base
 
 # Import all models so SQLAlchemy knows about them.
 from app.modules.locations.models import Location
-
+from app.modules.organizations.models import (
+    Organization,
+    OrganizationMember,
+)
 
 config = context.config
 

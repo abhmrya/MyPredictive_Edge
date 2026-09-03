@@ -21,7 +21,7 @@ from app.utils.log_context import (
 from app.modules.health.routes import router as health_router
 from app.modules.locations.routes import router as locations_router
 from app.modules.auth.routes import router as auth_router
-
+from app.modules.organizations.router import router as organization_router
 
 from app.core.exceptions import NotFoundError
 from fastapi.exceptions import RequestValidationError
@@ -271,6 +271,7 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(locations_router)
+app.include_router(organization_router)
 
 
 
