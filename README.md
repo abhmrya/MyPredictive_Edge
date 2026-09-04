@@ -175,6 +175,36 @@ Each module usually follows this structure:
 
 This keeps endpoints thin and business logic reusable.
 
+## Inventory and MCP integration
+
+Inventory is organization-scoped and keyed by `(location_id, sku)`. Apply the
+new migration before using the API:
+
+```powershell
+cd apps\backend
+alembic upgrade head
+```
+
+The REST API uses the existing Supabase authentication and RBAC permissions:
+
+- `GET /api/v1/inventory/organizations/{organization_id}`
+- `GET /api/v1/inventory/organizations/{organization_id}/{inventory_id}`
+- `PUT /api/v1/inventory/organizations/{organization_id}`
+- `PATCH /api/v1/inventory/organizations/{organization_id}/{inventory_id}`
+
+Install dependencies and run the MCP server over stdio for an MCP-compatible
+client:
+
+```powershell
+pip install -r requirements.txt
+python -m app.mcp.server
+```
+
+The MCP tools are read-only (`get_inventory` and `get_inventory_item`) and
+reuse `SupabaseInventoryAdapter`, so MCP and REST cannot drift into separate
+inventory implementations. Keep the MCP process in a trusted environment and
+pass only organization IDs the caller is authorized to inspect.
+
 ---
 
 ## 8. Real module example: auth
