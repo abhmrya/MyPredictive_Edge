@@ -63,3 +63,10 @@ class BadRequestError(AppError):
             message=message,
             status_code=status.HTTP_400_BAD_REQUEST,
         )
+
+class ConflictError(AppError):
+    def __init__(self, message: str = "Resource already exists"):
+        super().__init__(
+            message=message,
+            status_code=status.HTTP_409_CONFLICT,
+        )

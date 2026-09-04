@@ -2,7 +2,7 @@ from contextlib import asynccontextmanager
 from time import perf_counter
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse, JSONResponse
 
@@ -22,6 +22,9 @@ from app.modules.health.routes import router as health_router
 from app.modules.locations.routes import router as locations_router
 from app.modules.auth.routes import router as auth_router
 from app.modules.organizations.router import router as organization_router
+from app.modules.rbac.router import router as rbac_router
+from app.modules.locations.routes import router as locations_router
+
 
 from app.core.exceptions import NotFoundError
 from fastapi.exceptions import RequestValidationError
@@ -43,6 +46,18 @@ async def lifespan(app: FastAPI):
 
     print("Application shutdown complete")
 
+async def myfunc(request: Request):
+    # breakpoint()
+    print(request.url.hostname)
+    print(request.body)
+    print(request.method)
+    print(request.url.scheme)
+    # print(request.headers['content-type'])
+    print(dir(request))
+    print(dir(request))
+    print(repr(request))
+    print("DEPENDENCY RUNNING:", request.method, request.url.path)
+
 
 app = FastAPI(
     title=settings.app_name,
@@ -50,6 +65,10 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
     lifespan=lifespan,
+
+    dependencies=[Depends(myfunc)],
+    # root_path="/api/v1/abhay",
+
 )
 
 app.state.limiter = limiter
@@ -272,6 +291,8 @@ app.include_router(auth_router)
 app.include_router(health_router)
 app.include_router(locations_router)
 app.include_router(organization_router)
+app.include_router(rbac_router)
+app.include_router(locations_router)
 
 
 
@@ -319,3 +340,12 @@ async def test_auth(
         "message": "Authentication successful",
         "user": current_user,
     }
+
+
+@app.middleware("http")
+async def my_middleware(request: Request, call_next):
+    print("MYFUNC:", request.method, request.url.path)
+
+    response = await call_next(request)
+
+    return response
