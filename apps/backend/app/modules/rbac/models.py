@@ -7,6 +7,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     String,
+    Text,
     UniqueConstraint,
     text,
 )
@@ -19,8 +20,16 @@ def utc_now() -> datetime:
     return datetime.now(timezone.utc)
 
 
-class Organization(Base):
-    __tablename__ = "organizations"
+class OrganizationRole(Base):
+    __tablename__ = "organization_roles"
+
+    __table_args__ = (
+        UniqueConstraint(
+            "organization_id",
+            "name",
+            name="uq_organization_role_name",
+        ),
+    )
 
     id = Column(
         UUID(as_uuid=True),
@@ -29,22 +38,24 @@ class Organization(Base):
         server_default=text("gen_random_uuid()"),
     )
 
-    name = Column(
-        String(255),
-        nullable=False,
-    )
-
-    slug = Column(
-        String(100),
-        unique=True,
-        nullable=False,
-        index=True,
-    )
-
-    created_by_user_id = Column(
+    organization_id = Column(
         UUID(as_uuid=True),
+        ForeignKey(
+            "organizations.id",
+            ondelete="CASCADE",
+        ),
         nullable=False,
         index=True,
+    )
+
+    name = Column(
+        String(100),
+        nullable=False,
+    )
+
+    description = Column(
+        Text,
+        nullable=True,
     )
 
     is_active = Column(
@@ -70,14 +81,14 @@ class Organization(Base):
     )
 
 
-class OrganizationMember(Base):
-    __tablename__ = "organization_members"
+class OrganizationRolePermission(Base):
+    __tablename__ = "organization_role_permissions"
 
     __table_args__ = (
         UniqueConstraint(
-            "organization_id",
-            "user_id",
-            name="uq_organization_member",
+            "role_id",
+            "permission",
+            name="uq_role_permission",
         ),
     )
 
@@ -88,43 +99,24 @@ class OrganizationMember(Base):
         server_default=text("gen_random_uuid()"),
     )
 
-    organization_id = Column(
+    role_id = Column(
         UUID(as_uuid=True),
         ForeignKey(
-            "organizations.id",
+            "organization_roles.id",
             ondelete="CASCADE",
         ),
         nullable=False,
         index=True,
     )
 
-    user_id = Column(
-        UUID(as_uuid=True),
+    permission = Column(
+        String(150),
         nullable=False,
-        index=True,
-    )
-
-    role_id = Column(
-        UUID(as_uuid=True),
-        ForeignKey(
-            "organization_roles.id",
-            ondelete="RESTRICT",
-        ),
-        nullable=False,
-        index=True,
     )
 
     created_at = Column(
         DateTime(timezone=True),
         nullable=False,
         default=utc_now,
-        server_default=text("now()"),
-    )
-
-    updated_at = Column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=utc_now,
-        onupdate=utc_now,
         server_default=text("now()"),
     )

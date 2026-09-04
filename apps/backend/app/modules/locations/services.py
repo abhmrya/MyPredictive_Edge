@@ -1,160 +1,319 @@
 from typing import Any
 from uuid import UUID
 
-from fastapi import HTTPException
-
-from app.modules.locations.schemas import LocationCreate, LocationUpdate
+from app.core.exceptions import (
+    AppError,
+    BadRequestError,
+    NotFoundError,
+)
+from app.modules.locations.schemas import (
+    LocationCreate,
+    LocationUpdate,
+)
 from app.services.supabase_client import async_supabase
 
 
-async def create_location(location: LocationCreate) -> dict[str, Any]:
-    payload = {
-        "name": location.name,
-        "type": location.type,
-        "address": location.address,
-        "city": location.city,
-        "state": location.state,
-        "country": location.country,
-        "zip_code": location.zip_code,
-        "lat": location.lat,
-        "lng": location.lng,
-        "capacity": location.capacity,
-    }
+async def create_location(
+    organization_id: str,
+    payload: LocationCreate,
+) -> dict[str, Any]:
 
     try:
+        organization_uuid = UUID(organization_id)
+    except (ValueError, TypeError):
+        raise BadRequestError(
+            "Invalid organization ID."
+        )
+
+    try:
+        # Verify organization exists
+        organization_result = (
+            await async_supabase
+            .table("organizations")
+            .select("id, is_active")
+            .eq("id", str(organization_uuid))
+            .limit(1)
+            .execute()
+        )
+
+        if not organization_result.data:
+            raise NotFoundError(
+                "Organization not found."
+            )
+
+        organization = organization_result.data[0]
+
+        if not organization["is_active"]:
+            raise BadRequestError(
+                "Organization is inactive."
+            )
+
+        location_payload = {
+            "organization_id": str(organization_uuid),
+            "name": payload.name.strip(),
+            "type": payload.type.strip()
+            if payload.type
+            else None,
+            "address": payload.address.strip()
+            if payload.address
+            else None,
+            "city": payload.city.strip()
+            if payload.city
+            else None,
+            "state": payload.state.strip()
+            if payload.state
+            else None,
+            "country": payload.country.strip()
+            if payload.country
+            else None,
+            "zip_code": payload.zip_code.strip()
+            if payload.zip_code
+            else None,
+            "lat": payload.lat,
+            "lng": payload.lng,
+            "capacity": payload.capacity,
+        }
+
         result = (
             await async_supabase
             .table("locations")
-            .insert(payload)
+            .insert(location_payload)
             .execute()
         )
 
         if not result.data:
-            raise HTTPException(
-                status_code=500,
-                detail="Failed to create location",
+            raise AppError(
+                "Failed to create location."
             )
-
-        print("Location created successfully:", result.data[0])  # Debugging statement
-        # breakpoint()
 
         return result.data[0]
 
-    except HTTPException:
+    except (BadRequestError, NotFoundError, AppError):
         raise
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to create location: {str(e)}",
+    except Exception as exc:
+        print(
+            "LOCATION CREATE ERROR:",
+            type(exc).__name__,
+            str(exc),
         )
-    
-async def get_locations() -> list[dict[str,Any]]:
+
+        raise AppError(
+            "Failed to create location."
+        )
+
+
+async def get_locations(
+    organization_id: str,
+) -> list[dict[str, Any]]:
+
+    try:
+        UUID(organization_id)
+    except (ValueError, TypeError):
+        raise BadRequestError(
+            "Invalid organization ID."
+        )
+
     try:
         result = (
             await async_supabase
             .table("locations")
             .select("*")
+            .eq("organization_id", organization_id)
+            .order("created_at", desc=True)
             .execute()
         )
 
-        if not result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="No locations found",
-            )
+        return result.data or []
 
-        print("Locations retrieved successfully:", result.data)  # Debugging statement
-        return result.data
-
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve locations: {str(e)}",
+    except Exception as exc:
+        print(
+            "LOCATION LIST ERROR:",
+            type(exc).__name__,
+            str(exc),
         )
 
-async def get_location(location_id: UUID) -> dict[str, Any]:
+        raise AppError(
+            "Failed to fetch locations."
+        )
+
+
+async def get_location(
+    organization_id: str,
+    location_id: str,
+) -> dict[str, Any]:
+
     try:
-        result = (
-            await async_supabase.table("locations").select("*").eq("id", location_id).execute()
-        )
-        if not result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Location not found",
-            )
-        return result.data[0]
-    except HTTPException:
-        raise
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve location: {str(e)}",
-        )       
-
-
-async def update_location(location_id: UUID,
-                          location:LocationUpdate,) -> dict[str, Any]:
-    payload = location.model_dump(exclude_unset=True)
-
-    if not payload:
-        raise HTTPException(
-            status_code=400,
-            detail="No fields provided for update",
+        UUID(organization_id)
+        UUID(location_id)
+    except (ValueError, TypeError):
+        raise BadRequestError(
+            "Invalid organization ID or location ID."
         )
 
     try:
         result = (
             await async_supabase
             .table("locations")
-            .update(payload)
+            .select("*")
             .eq("id", location_id)
+            .eq("organization_id", organization_id)
+            .limit(1)
             .execute()
         )
 
         if not result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Location not found",
+            raise NotFoundError(
+                "Location not found."
             )
-        print("Location updated successfully:", result.data[0])  # Debugging statement
+
         return result.data[0]
-    
-    except HTTPException:
+
+    except NotFoundError:
         raise
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to update location: {str(e)}",
+    except Exception as exc:
+        print(
+            "LOCATION GET ERROR:",
+            type(exc).__name__,
+            str(exc),
         )
 
-async def delete_location(location_id: UUID) -> dict[str, Any]:
+        raise AppError(
+            "Failed to fetch location."
+        )
+
+
+async def update_location(
+    organization_id: str,
+    location_id: str,
+    payload: LocationUpdate,
+) -> dict[str, Any]:
+
     try:
+        UUID(organization_id)
+        UUID(location_id)
+    except (ValueError, TypeError):
+        raise BadRequestError(
+            "Invalid organization ID or location ID."
+        )
+
+    update_data = payload.model_dump(
+        exclude_unset=True
+    )
+
+    if not update_data:
+        raise BadRequestError(
+            "No fields provided for update."
+        )
+
+    for field in [
+        "name",
+        "type",
+        "address",
+        "city",
+        "state",
+        "country",
+        "zip_code",
+    ]:
+        if field in update_data and update_data[field] is not None:
+            update_data[field] = update_data[field].strip()
+
+    try:
+        existing = (
+            await async_supabase
+            .table("locations")
+            .select("id")
+            .eq("id", location_id)
+            .eq("organization_id", organization_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not existing.data:
+            raise NotFoundError(
+                "Location not found."
+            )
+
         result = (
             await async_supabase
+            .table("locations")
+            .update(update_data)
+            .eq("id", location_id)
+            .eq("organization_id", organization_id)
+            .execute()
+        )
+
+        if not result.data:
+            raise AppError(
+                "Failed to update location."
+            )
+
+        return result.data[0]
+
+    except (NotFoundError, BadRequestError, AppError):
+        raise
+
+    except Exception as exc:
+        print(
+            "LOCATION UPDATE ERROR:",
+            type(exc).__name__,
+            str(exc),
+        )
+
+        raise AppError(
+            "Failed to update location."
+        )
+
+
+async def delete_location(
+    organization_id: str,
+    location_id: str,
+) -> None:
+
+    try:
+        UUID(organization_id)
+        UUID(location_id)
+    except (ValueError, TypeError):
+        raise BadRequestError(
+            "Invalid organization ID or location ID."
+        )
+
+    try:
+        existing = (
+            await async_supabase
+            .table("locations")
+            .select("id")
+            .eq("id", location_id)
+            .eq("organization_id", organization_id)
+            .limit(1)
+            .execute()
+        )
+
+        if not existing.data:
+            raise NotFoundError(
+                "Location not found."
+            )
+
+        await (
+            async_supabase
             .table("locations")
             .delete()
             .eq("id", location_id)
+            .eq("organization_id", organization_id)
             .execute()
         )
 
-        if not result.data:
-            raise HTTPException(
-                status_code=404,
-                detail="Location not found",
-            )
-        return {"message": "Location deleted successfully"}
-
-    except HTTPException:
+    except (NotFoundError, BadRequestError):
         raise
 
-    except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to delete location: {str(e)}",
+    except Exception as exc:
+        print(
+            "LOCATION DELETE ERROR:",
+            type(exc).__name__,
+            str(exc),
+        )
+
+        raise AppError(
+            "Failed to delete location."
         )
