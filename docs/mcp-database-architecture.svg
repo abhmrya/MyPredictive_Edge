@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="720" viewBox="0 0 1200 720">
+  <style>
+    .box { fill: #f8fafc; stroke: #2563eb; stroke-width: 2; rx: 12; }
+    .db { fill: #ecfdf5; stroke: #059669; stroke-width: 2; rx: 12; }
+    .note { fill: #fff7ed; stroke: #ea580c; stroke-width: 2; rx: 12; }
+    .title { font: bold 24px Arial; fill: #0f172a; }
+    .label { font: bold 17px Arial; fill: #0f172a; }
+    .text { font: 15px Arial; fill: #334155; }
+    .arrow { stroke: #475569; stroke-width: 2.5; fill: none; marker-end: url(#arrow); }
+    .dashed { stroke-dasharray: 8 6; }
+  </style>
+  <defs>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="9" refY="3" orient="auto">
+      <path d="M0,0 L10,3 L0,6 Z" fill="#475569"/>
+    </marker>
+  </defs>
+  <text x="600" y="42" text-anchor="middle" class="title">Predictive Edge - MCP to Supabase Database</text>
+
+  <rect x="55" y="105" width="220" height="120" class="box"/>
+  <text x="165" y="140" text-anchor="middle" class="label">MCP Host</text>
+  <text x="165" y="170" text-anchor="middle" class="text">Claude / Cursor</text>
+  <text x="165" y="195" text-anchor="middle" class="text">User + AI model</text>
+
+  <rect x="340" y="105" width="220" height="120" class="box"/>
+  <text x="450" y="140" text-anchor="middle" class="label">MCP Server</text>
+  <text x="450" y="170" text-anchor="middle" class="text">app/mcp/server.py</text>
+  <text x="450" y="195" text-anchor="middle" class="text">stdio + 2 read tools</text>
+
+  <rect x="625" y="105" width="220" height="120" class="box"/>
+  <text x="735" y="140" text-anchor="middle" class="label">Inventory Adapter</text>
+  <text x="735" y="170" text-anchor="middle" class="text">organization scope</text>
+  <text x="735" y="195" text-anchor="middle" class="text">shared REST/MCP logic</text>
+
+  <rect x="910" y="105" width="235" height="120" class="db"/>
+  <text x="1027" y="140" text-anchor="middle" class="label">Supabase Data API</text>
+  <text x="1027" y="170" text-anchor="middle" class="text">AsyncSupabase client</text>
+  <text x="1027" y="195" text-anchor="middle" class="text">SUPABASE_URL + secret</text>
+
+  <path d="M275 165 H340" class="arrow"/>
+  <path d="M560 165 H625" class="arrow"/>
+  <path d="M845 165 H910" class="arrow"/>
+  <text x="307" y="150" text-anchor="middle" class="text">JSON-RPC</text>
+  <text x="592" y="150" text-anchor="middle" class="text">tool call</text>
+  <text x="877" y="150" text-anchor="middle" class="text">REST query</text>
+
+  <rect x="910" y="355" width="235" height="120" class="db"/>
+  <text x="1027" y="390" text-anchor="middle" class="label">Supabase Postgres</text>
+  <text x="1027" y="420" text-anchor="middle" class="text">organizations</text>
+  <text x="1027" y="445" text-anchor="middle" class="text">locations / inventory</text>
+  <path d="M1027 225 V355" class="arrow"/>
+  <text x="1050" y="300" class="text">database</text>
+
+  <rect x="55" y="355" width="500" height="120" class="note"/>
+  <text x="305" y="390" text-anchor="middle" class="label">Schema management (separate path)</text>
+  <text x="305" y="420" text-anchor="middle" class="text">Alembic + SQLAlchemy use DATABASE_URL</text>
+  <text x="305" y="445" text-anchor="middle" class="text">migrations create keys, constraints and tables</text>
+  <path d="M555 415 H820 Q850 415 850 355 H910" class="arrow dashed"/>
+
+  <rect x="55" y="560" width="1090" height="90" class="box"/>
+  <text x="600" y="595" text-anchor="middle" class="label">Security boundary</text>
+  <text x="600" y="625" text-anchor="middle" class="text">Server-only secret • organization_id required • MCP tools are currently read-only</text>
+</svg>

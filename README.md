@@ -205,6 +205,9 @@ reuse `SupabaseInventoryAdapter`, so MCP and REST cannot drift into separate
 inventory implementations. Keep the MCP process in a trusted environment and
 pass only organization IDs the caller is authorized to inspect.
 
+For the Hindi/Hinglish MCP usage guide and database connection diagram, see
+[`docs/mcp-guide-hi.md`](docs/mcp-guide-hi.md).
+
 ---
 
 ## 8. Real module example: auth
